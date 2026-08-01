@@ -2,6 +2,10 @@
 
 Vendor-neutral, dependency-light spans, structured logs, counters, gauges, crash context, deterministic sampling, bounded batching, and pluggable export for PAM Native apps. The default HTTPS transport works with a collector or ingestion gateway; implement `TelemetryTransport` for Sentry, Datadog, Honeycomb, New Relic, or an offline spool.
 
+```bash
+composer require pushinbr/pam-native-observability
+```
+
 ```php
 $telemetry = new Observability($config, new CurlTelemetryTransport());
 $span = $telemetry->span('feed.load');
