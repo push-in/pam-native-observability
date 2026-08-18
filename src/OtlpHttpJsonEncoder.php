@@ -70,7 +70,7 @@ final class OtlpHttpJsonEncoder implements TelemetryEncoder
                 'endTimeUnixNano' => $this->requiredString($data, 'endUnixNano'),
                 'attributes' => $this->attributes($this->attributeData($data)),
                 'status' => ['code' => $this->spanStatus($data['status'] ?? null)],
-                'flags' => 1,
+                'flags' => $this->traceFlags($data['traceFlags'] ?? null),
             ];
             if (isset($data['parentSpanId']) && is_string($data['parentSpanId'])) {
                 $span['parentSpanId'] = $data['parentSpanId'];
@@ -87,6 +87,15 @@ final class OtlpHttpJsonEncoder implements TelemetryEncoder
                 ]],
             ]],
         ];
+    }
+
+    private function traceFlags(mixed $value): int
+    {
+        if (!is_int($value) || $value < 0 || $value > 255) {
+            throw new InvalidArgumentException('Invalid trace flags.');
+        }
+
+        return $value;
     }
 
     /**

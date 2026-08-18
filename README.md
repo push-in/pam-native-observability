@@ -21,6 +21,19 @@ catch (Throwable $e) { $span->exception($e); throw $e; }
 finally { $span->end(); $telemetry->flush(); }
 ```
 
+Continue a PAM Server trace from its validated response header without
+inventing a new root:
+
+```php
+$parent = TraceContext::fromTraceparent($response->header('traceparent'));
+$span = $telemetry->span('native.feed.render', $parent);
+```
+
+Only lowercase W3C version `00` contexts with nonzero trace/span identifiers
+are accepted. Native creates a distinct child span, preserves trace flags and
+does not enqueue children of an unsampled remote context. `tracestate` remains
+unsupported until a vendor allowlist and bounded forwarding policy exist.
+
 The queue is bounded and drops the oldest signals under backpressure. Failed exports are restored to the front of the queue. Secrets and personal data are never collected automatically; applications explicitly choose context and attributes.
 
 ## Certified OTLP export
@@ -71,6 +84,7 @@ Use `pam packages` to inspect availability and `pam remove observability` to uni
 | `ObservabilityConfig` | Set endpoint, service identity, sampling, queue, and batch policy. |
 | `WireProtocol` | Select compatible PAM JSON (`1`) or OTLP/HTTP JSON (`2`). |
 | `Span` / `SpanStatus` | Capture timed operations, status, attributes, and exceptions. |
+| `TraceContext` | Validate a W3C version `00` parent and continue its sampling/lineage. |
 | `TelemetryTransport` | Implement vendor, collector, gateway, or offline delivery. |
 | `CurlTelemetryTransport` | Send batches through the dependency-light default HTTPS transport. |
 | `Severity` / `SignalKind` | Typed log severity and signal categories. |

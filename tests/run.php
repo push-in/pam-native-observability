@@ -10,6 +10,7 @@ use Pam\Native\Observability\SignalFamily;
 use Pam\Native\Observability\SignalKind;
 use Pam\Native\Observability\SpanStatus;
 use Pam\Native\Observability\TelemetryTransport;
+use Pam\Native\Observability\TraceContext;
 use Pam\Native\Observability\WireProtocol;
 $root = dirname(__DIR__);
 if (!class_exists(Observability::class)) {
@@ -184,6 +185,52 @@ test('OTLP encodes every signal family at its standard endpoint', static functio
     same(1, $counter['aggregationTemporality'] ?? null, 'counter must use delta temporality');
     $gaugePoint = objectAt($transport->requests[2]['body'], ['resourceMetrics', 0, 'scopeMetrics', 0, 'metrics', 1, 'gauge', 'dataPoints', 0]);
     same(42.5, $gaugePoint['asDouble'] ?? null, 'gauge double wire type');
+});
+
+test('validated W3C context continues server lineage and sampling', static function (): void {
+    $transport = new FakeTransport();
+    $telemetry = new Observability(
+        new ObservabilityConfig(
+            endpoint: 'https://collector.example',
+            serviceName: 'native-lineage',
+            wireProtocol: WireProtocol::OtlpHttpJson,
+        ),
+        $transport,
+    );
+    $parent = TraceContext::fromTraceparent(
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
+    );
+    same(
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
+        $parent->traceparent(),
+        'traceparent should round-trip',
+    );
+    $telemetry->span('native.continued', $parent)->end();
+    same(1, $telemetry->flush(), 'sampled remote child should export');
+    $span = objectAt(
+        $transport->requests[0]['body'],
+        ['resourceSpans', 0, 'scopeSpans', 0, 'spans', 0],
+    );
+    same($parent->traceId, $span['traceId'] ?? null, 'remote trace ID must continue');
+    same($parent->spanId, $span['parentSpanId'] ?? null, 'remote span ID must become parent');
+    same(1, $span['flags'] ?? null, 'sample flag must continue');
+
+    $unsampled = TraceContext::fromTraceparent(
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00',
+    );
+    truth(!$unsampled->sampled(), 'zero sampling flag should remain unsampled');
+    $telemetry->span('native.not-exported', $unsampled)->end();
+    same(0, $telemetry->queued(), 'unsampled remote child must not enter the queue');
+    throws(
+        static fn () => TraceContext::fromTraceparent('forged'),
+        'invalid traceparent must be rejected',
+    );
+    throws(
+        static fn () => TraceContext::fromTraceparent(
+            '00-00000000000000000000000000000000-00f067aa0ba902b7-01',
+        ),
+        'zero trace ID must be rejected',
+    );
 });
 
 test('failed transport restores a complete batch', static function (): void {

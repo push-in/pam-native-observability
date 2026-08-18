@@ -69,6 +69,8 @@ if [[ "${accepted}" -ne 1 ]]; then
     printf 'Collector did not expose every PAM Native signal family\n' >&2
     exit 1
 fi
+grep -Fq '4bf92f3577b34da6a3ce929d0e0e4736' "${evidence}/collector.log"
+grep -Fq '00f067aa0ba902b7' "${evidence}/collector.log"
 if grep -Fq 'must-not-leak' "${evidence}/collector.log"; then
     printf 'private exception message leaked into OTLP\n' >&2
     exit 1

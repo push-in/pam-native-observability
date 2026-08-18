@@ -21,6 +21,7 @@ final class Span
         public readonly string $traceId,
         public readonly string $spanId,
         public readonly ?string $parentSpanId,
+        public readonly int $traceFlags,
         private readonly int $startedNs,
     ) {}
 

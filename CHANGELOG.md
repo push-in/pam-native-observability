@@ -9,6 +9,8 @@
 - Add bounded Collector responses, partial-success rejection, full-batch
   restoration, loopback-only HTTP, opt-in exception details, PHPStan level 9,
   a reproducible dependency lock, and official-Collector CI certification.
+- Add strict W3C version `00` parent import with preserved trace ID, parent span
+  ID and sampling flags for Server-to-Native trace continuation.
 
 ## 0.1.0 - 2026-08-01
 

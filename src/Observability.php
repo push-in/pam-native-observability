@@ -35,18 +35,35 @@ final class Observability
         $this->context = $this->clean($values);
     }
 
-    public function span(string $name, ?Span $parent = null): Span
+    public function span(string $name, Span|TraceContext|null $parent = null): Span
     {
         if (preg_match('/^[^\x00-\x1f]{1,200}$/u', $name) !== 1) {
             throw new InvalidArgumentException('Invalid span name.');
         }
 
+        $traceId = match (true) {
+            $parent instanceof Span => $parent->traceId,
+            $parent instanceof TraceContext => $parent->traceId,
+            default => bin2hex(random_bytes(16)),
+        };
+        $parentSpanId = match (true) {
+            $parent instanceof Span => $parent->spanId,
+            $parent instanceof TraceContext => $parent->spanId,
+            default => null,
+        };
+        $traceFlags = match (true) {
+            $parent instanceof Span => $parent->traceFlags,
+            $parent instanceof TraceContext => $parent->flags,
+            default => 1,
+        };
+
         return new Span(
             owner: $this,
             name: $name,
-            traceId: $parent === null ? bin2hex(random_bytes(16)) : $parent->traceId,
+            traceId: $traceId,
             spanId: bin2hex(random_bytes(8)),
-            parentSpanId: $parent?->spanId,
+            parentSpanId: $parentSpanId,
+            traceFlags: $traceFlags,
             startedNs: hrtime(true),
         );
     }
@@ -103,7 +120,7 @@ final class Observability
         SpanStatus $status,
         array $attributes,
     ): void {
-        if (!$this->sample($span->traceId)) {
+        if (($span->traceFlags & 1) === 0 || !$this->sample($span->traceId)) {
             return;
         }
         $this->enqueue(SignalKind::Span, [
@@ -111,6 +128,7 @@ final class Observability
             'traceId' => $span->traceId,
             'spanId' => $span->spanId,
             'parentSpanId' => $span->parentSpanId,
+            'traceFlags' => $span->traceFlags,
             'startUnixNano' => $this->unixNano($start),
             'endUnixNano' => $this->unixNano($end),
             'status' => $status->value,
