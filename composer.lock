@@ -1,0 +1,143 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "a48a3a1b5adfe8c90121a0b3f5f1f487",
+    "packages": [
+        {
+            "name": "pushinbr/pam-native",
+            "version": "v0.6.73",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/push-in/pam-native-php.git",
+                "reference": "198f4a8f99763ba2b018ff152be900228ff6dbce"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/push-in/pam-native-php/zipball/198f4a8f99763ba2b018ff152be900228ff6dbce",
+                "reference": "198f4a8f99763ba2b018ff152be900228ff6dbce",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4"
+            },
+            "bin": [
+                "bin/pam-native-format",
+                "bin/pam-native-language-server",
+                "bin/pam-native-optimize",
+                "bin/pam-native-routes"
+            ],
+            "type": "library",
+            "extra": {
+                "pam-native": {
+                    "protocol": 1,
+                    "plugin-schema": "resources/pam-native.plugin.schema.json",
+                    "manifest-schema": "resources/pam-native.schema.json",
+                    "template-custom-data": "resources/pam-native.custom-data.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Pam\\Native\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Build fast native Android and iOS applications with PHP and PAM.",
+            "homepage": "https://github.com/push-in/pam-native",
+            "keywords": [
+                "android",
+                "mobile",
+                "native",
+                "pam",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/push-in/pam-native/issues",
+                "source": "https://github.com/push-in/pam-native"
+            },
+            "time": "2026-08-10T21:17:07+00:00"
+        }
+    ],
+    "packages-dev": [
+        {
+            "name": "phpstan/phpstan",
+            "version": "2.2.8",
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e285254e60f33c21902efef4a926ca0987c06804",
+                "reference": "e285254e60f33c21902efef4a926ca0987c06804",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4|^8.0"
+            },
+            "conflict": {
+                "phpstan/phpstan-shim": "*"
+            },
+            "bin": [
+                "phpstan",
+                "phpstan.phar"
+            ],
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ondřej Mirtes"
+                },
+                {
+                    "name": "Markus Staab"
+                },
+                {
+                    "name": "Vincent Langlet"
+                }
+            ],
+            "description": "PHPStan - PHP Static Analysis Tool",
+            "keywords": [
+                "dev",
+                "static analysis"
+            ],
+            "support": {
+                "docs": "https://phpstan.org/user-guide/getting-started",
+                "forum": "https://github.com/phpstan/phpstan/discussions",
+                "issues": "https://github.com/phpstan/phpstan/issues",
+                "security": "https://github.com/phpstan/phpstan/security/policy",
+                "source": "https://github.com/phpstan/phpstan-src"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/ondrejmirtes",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/phpstan",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-08-04T22:21:45+00:00"
+        }
+    ],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^8.4",
+        "ext-json": "*"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
+}

@@ -8,6 +8,12 @@ pam doctor
 ```
 
 ```php
+$config = new ObservabilityConfig(
+    endpoint: 'https://collector.example',
+    serviceName: 'showcase-mobile',
+    serviceVersion: '1.0.0',
+    wireProtocol: WireProtocol::OtlpHttpJson,
+);
 $telemetry = new Observability($config, new CurlTelemetryTransport());
 $span = $telemetry->span('feed.load');
 try { loadFeed(); $span->status(SpanStatus::Ok); }
@@ -16,6 +22,39 @@ finally { $span->end(); $telemetry->flush(); }
 ```
 
 The queue is bounded and drops the oldest signals under backpressure. Failed exports are restored to the front of the queue. Secrets and personal data are never collected automatically; applications explicitly choose context and attributes.
+
+## Certified OTLP export
+
+`WireProtocol::OtlpHttpJson` maps each signal to the matching OpenTelemetry
+Protocol endpoint instead of relabeling PAM's original envelope:
+
+| PAM signal | OTLP payload | Endpoint |
+| --- | --- | --- |
+| Span | `resourceSpans` | `/v1/traces` |
+| Log and crash context | `resourceLogs` | `/v1/logs` |
+| Counter and gauge | `resourceMetrics` | `/v1/metrics` |
+
+Counters use delta temporality; integer and floating-point points keep their
+wire types. Log severity and span status are translated at the external OTLP
+boundary, while PAM's public enums remain sequential integers beginning at
+`1`. Batches never mix signal families, and any transport or encoding failure
+restores the complete batch to the bounded queue.
+
+Remote endpoints require HTTPS. Loopback HTTP is accepted only for local
+Collector development and certification. The cURL transport refuses redirects
+to HTTP, limits response bodies to 64 KiB, and treats OTLP `partialSuccess`
+rejections as failed delivery.
+
+The official-Collector contract is reproducible:
+
+```bash
+composer install
+scripts/certify-collector.sh
+```
+
+CI verifies the Collector's Sigstore identity and immutable image digest before
+testing traces, logs, counters, gauges, parent span lineage, and exception-data
+redaction.
 
 
 ## What installation does
@@ -30,6 +69,7 @@ Use `pam packages` to inspect availability and `pam remove observability` to uni
 | --- | --- |
 | `Observability` | Create spans, logs, counters, gauges, crash context, and flush batches. |
 | `ObservabilityConfig` | Set endpoint, service identity, sampling, queue, and batch policy. |
+| `WireProtocol` | Select compatible PAM JSON (`1`) or OTLP/HTTP JSON (`2`). |
 | `Span` / `SpanStatus` | Capture timed operations, status, attributes, and exceptions. |
 | `TelemetryTransport` | Implement vendor, collector, gateway, or offline delivery. |
 | `CurlTelemetryTransport` | Send batches through the dependency-light default HTTPS transport. |
@@ -39,8 +79,10 @@ All coded states, kinds, and variants are sequential integer-backed enums. Use e
 
 ## Production checklist
 
-- Send telemetry only to HTTPS endpoints you control or explicitly trust.
+- Send remote telemetry only to HTTPS endpoints you control or explicitly trust.
 - Define an attribute allowlist and never attach secrets or personal data by default.
+- Keep `captureExceptionDetails` disabled unless users consent to messages,
+  source paths, line numbers, and stack traces leaving the device.
 - Flush on lifecycle transitions without blocking the UI indefinitely.
 - Monitor dropped-signal counters and tune bounded queues from evidence.
 - Run `pam doctor`, `pam test`, and a signed release build on every supported platform.
