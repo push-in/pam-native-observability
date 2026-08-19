@@ -216,7 +216,7 @@ final class Observability
     private function takeBatch(): array
     {
         if ($this->config->wireProtocol === WireProtocol::PamJson) {
-            return array_splice($this->queue, 0, $this->config->batchSize);
+            return array_values(array_splice($this->queue, 0, $this->config->batchSize));
         }
 
         $family = SignalKind::from($this->queue[0]['kind'])->family();
@@ -227,7 +227,7 @@ final class Observability
             $length++;
         }
 
-        return array_splice($this->queue, 0, $length);
+        return array_values(array_splice($this->queue, 0, $length));
     }
 
     private function sample(string $traceId): bool
