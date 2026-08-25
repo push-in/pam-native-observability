@@ -6,7 +6,7 @@
     "require": {
         "php": "^8.5",
         "ext-json": "*",
-        "pushinbr/pam-native": "^0.8.0"
+        "pushinbr/pam-native": "^0.8 || ^0.9 || ^0.10 || ^1.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1"
