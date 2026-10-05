@@ -1,19 +1,32 @@
 {
     "name": "pushinbr/pam-native-observability",
-    "description": "Vendor-neutral traces, metrics, logs and crash context for PAM Native.",
-    "type": "library",
+    "description": "Vendor-neutral telemetry and a native Sentry exporter (crashes, ANRs, NDK, PHP errors) for PAM Native.",
+    "type": "pam-native-plugin",
+    "keywords": [
+        "pam-native",
+        "observability",
+        "opentelemetry",
+        "sentry",
+        "crash-reporting"
+    ],
     "license": "Apache-2.0",
     "require": {
         "php": "^8.5",
         "ext-json": "*",
-        "pushinbr/pam-native": "^0.8 || ^0.9 || ^0.10 || ^1.0"
+        "pushinbr/pam-native": "^1.0.35"
     },
     "require-dev": {
-        "phpstan/phpstan": "^2.1"
+        "phpstan/phpstan": "^2.1",
+        "pushinbr/pam-native-testing": "^0.2.0"
     },
     "autoload": {
         "psr-4": {
             "Pam\\Native\\Observability\\": "src/"
+        }
+    },
+    "extra": {
+        "pam-native": {
+            "plugin": "pam-native.plugin.json"
         }
     },
     "scripts": {

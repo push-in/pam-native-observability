@@ -4,9 +4,24 @@ declare(strict_types=1);
 
 namespace Pam\Native\Observability;
 
+use Closure;
 use InvalidArgumentException;
+use JsonException;
+use Pam\Native\Modules\NativeModuleResult;
+use Pam\Native\Modules\NativeModules;
 use Throwable;
 
+/**
+ * Vendor-neutral telemetry (instances, OTLP / PAM JSON) plus a process-wide
+ * native exporter (static methods):
+ *
+ * ```php
+ * Observability::exporter(SentryExporter::dsn($dsn)->environment('production')->release('app@1.0.0'));
+ * Observability::user('42');
+ * Observability::breadcrumb('Opened chat 42', 'navigation');
+ * Observability::capture($error);
+ * ```
+ */
 final class Observability
 {
     /** @var list<array{kind: int, timestampUnixNano: string, data: array<string, mixed>}> */
@@ -110,6 +125,134 @@ final class Observability
             'handled' => $handled,
             'exception' => $exception,
         ]);
+        SentryForwarder::capture($error, $handled, $handled ? Severity::Error : Severity::Fatal);
+    }
+
+    /**
+     * Installs the process-wide native exporter (Sentry). Native crashes, ANRs
+     * and NDK crashes are captured by the platform SDK; PHP uncaught
+     * exceptions, selected PHP errors and fatal shutdowns are forwarded.
+     *
+     * @param null|Closure(bool, ?string): void $then
+     */
+    public static function exporter(SentryExporter $exporter, ?Closure $then = null): int
+    {
+        return SentryForwarder::install($exporter, $then);
+    }
+
+    /**
+     * Reports a throwable with its PHP stack frames and chained causes.
+     * De-duplicated for 60 s and rate limited; a no-op without an exporter.
+     *
+     * @param array<string, string> $tags
+     * @param array<string, scalar|null> $extra
+     * @param null|Closure(?string): void $then receives the event id
+     */
+    public static function capture(Throwable $error, bool $handled = true, array $tags = [], array $extra = [], ?Closure $then = null): bool
+    {
+        return SentryForwarder::capture($error, $handled, $handled ? Severity::Error : Severity::Fatal, $tags, $extra, then: $then);
+    }
+
+    /**
+     * @param array<string, string> $tags
+     * @param null|Closure(?string): void $then
+     */
+    public static function message(string $message, Severity $level = Severity::Info, array $tags = [], ?Closure $then = null): bool
+    {
+        return SentryForwarder::message($message, $level, $tags, $then);
+    }
+
+    /** @param array<string, scalar|null> $data */
+    public static function breadcrumb(string $message, string $category = 'app', array $data = [], Severity $level = Severity::Info): void
+    {
+        SentryForwarder::breadcrumb($message, $category, $data, $level);
+    }
+
+    /** Identifies the signed-in user on every following event; pass null to clear. */
+    public static function user(?string $id, ?string $email = null, ?string $username = null): void
+    {
+        if (SentryForwarder::active()) {
+            SentryForwarder::fire('sentryUser', ['id' => $id ?? '', 'email' => $email ?? '', 'username' => $username ?? '']);
+        }
+    }
+
+    public static function tag(string $key, string $value): void
+    {
+        if (preg_match('/^[A-Za-z0-9_.:-]{1,32}$/D', $key) !== 1 || strlen($value) > 200) {
+            throw new InvalidArgumentException('Invalid exporter tag.');
+        }
+        if (SentryForwarder::active()) {
+            SentryForwarder::fire('sentryTag', ['key' => $key, 'value' => $value]);
+        }
+    }
+
+    /**
+     * Runs `$body`, reporting (then rethrowing) anything it throws.
+     *
+     * @template T
+     * @param Closure(): T $body
+     * @return T
+     */
+    public static function guard(Closure $body): mixed
+    {
+        try {
+            return $body();
+        } catch (Throwable $error) {
+            SentryForwarder::capture($error, handled: false, mechanism: 'pam.php.guard');
+            throw $error;
+        }
+    }
+
+    /** @param null|Closure(): void $then */
+    public static function exporterFlush(int $timeoutMillis = 2000, ?Closure $then = null): int
+    {
+        if ($timeoutMillis < 0 || $timeoutMillis > 30_000) {
+            throw new InvalidArgumentException('Flush timeout must be 0-30000 ms.');
+        }
+
+        return NativeModules::call(SentryForwarder::MODULE, 'sentryFlush', ['timeoutMs' => $timeoutMillis], static function () use ($then): void {
+            $then?->__invoke();
+        });
+    }
+
+    /** @param Closure(ExporterStatus): void $then */
+    public static function exporterStatus(Closure $then): int
+    {
+        return NativeModules::call(SentryForwarder::MODULE, 'sentryStatus', [], static function (NativeModuleResult $result) use ($then): void {
+            if (!$result->succeeded()) {
+                $then(new ExporterStatus(false, error: $result->message()));
+
+                return;
+            }
+            try {
+                $wire = json_decode((string) ($result->values()['status'] ?? '{}'), true, 8, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                $wire = [];
+            }
+            $then(ExporterStatus::fromWire(is_array($wire) ? $wire : []));
+        });
+    }
+
+    /**
+     * Sends a diagnostic exception through the native SDK and flushes it.
+     *
+     * @param Closure(bool, string): void $then success and the event id or the error message
+     */
+    public static function exporterTest(Closure $then): int
+    {
+        return NativeModules::call(SentryForwarder::MODULE, 'sentryTest', [], static function (NativeModuleResult $result) use ($then): void {
+            $then($result->succeeded(), $result->succeeded() ? (string) ($result->values()['eventId'] ?? '') : $result->message());
+        });
+    }
+
+    /** Stops the exporter and forgets the persisted configuration (e.g. on opt-out). */
+    public static function exporterStop(?Closure $then = null): int
+    {
+        SentryForwarder::reset();
+
+        return NativeModules::call(SentryForwarder::MODULE, 'sentryStop', [], static function () use ($then): void {
+            $then?->__invoke();
+        });
     }
 
     /** @param array<array-key, mixed> $attributes */

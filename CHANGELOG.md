@@ -1,6 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-10-05
+
+### Added
+
+- Native Sentry exporter: `Observability::exporter(SentryExporter::dsn(...)
+  ->environment()->release()->dist()->sampleRate()->tracesSampleRate()
+  ->tags()->anr()->nativeCrashes()->persist()->capturePhpErrors()->rateLimit())`
+  backed by the Sentry Android SDK 8.50.1 (JVM crashes, ANRs and NDK crashes
+  of the embedded PHP runtime).
+- The exporter configuration is persisted and restored by a ContentProvider
+  at process start, so crashes before the PHP runtime boots are captured.
+- PHP forwarding with PHP stack frames and chained causes: uncaught exception,
+  error (`E_WARNING`/`E_USER_*` by default) and fatal-shutdown handlers,
+  `Observability::capture()`, `message()`, `guard()`, and the existing
+  `Observability::crash()` pipeline. De-duplicated for 60 s and rate limited.
+- `breadcrumb()`, `user()`, `tag()`, `exporterFlush()`, `exporterStatus()`
+  (`ExporterStatus`), `exporterTest()` and `exporterStop()`.
+- The package is now a PAM Native plugin (`pam-native.plugin.json`, Android
+  module `observability`, iOS stub) with an Android instrumented suite that
+  verifies delivered Sentry envelopes.
+
+### Changed
+
+- Requires PAM Native `>=1.0.35 <2.0.0`.
+
+## 0.2.0 - 2026-08-23
 
 - Add certified OTLP/HTTP JSON encoding for traces, logs, crashes, delta
   counters, and gauges with signal-specific endpoints.

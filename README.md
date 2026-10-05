@@ -50,7 +50,7 @@ New to PAM? Follow the **[five-minute PAM Native setup](https://push-in.github.i
 
 ## See it in action
 
-Vendor-neutral, dependency-light spans, structured logs, counters, gauges, crash context, deterministic sampling, bounded batching, and pluggable export for PAM Native apps. The default HTTPS transport works with a collector or ingestion gateway; implement `TelemetryTransport` for Sentry, Datadog, Honeycomb, New Relic, or an offline spool.
+Vendor-neutral, dependency-light spans, structured logs, counters, gauges, crash context, deterministic sampling, bounded batching, and pluggable export for PAM Native apps. The default HTTPS transport works with a collector or ingestion gateway; use `Observability::exporter(SentryExporter::dsn(...))` for Sentry, or implement `TelemetryTransport` for Datadog, Honeycomb, New Relic, or an offline spool.
 
 ```bash
 pam add observability
@@ -85,6 +85,61 @@ does not enqueue children of an unsampled remote context. `tracestate` remains
 unsupported until a vendor allowlist and bounded forwarding policy exist.
 
 The queue is bounded and drops the oldest signals under backpressure. Failed exports are restored to the front of the queue. Secrets and personal data are never collected automatically; applications explicitly choose context and attributes.
+
+## Sentry exporter (native crashes + PHP errors)
+
+```php
+use Pam\Native\Observability\Observability;
+use Pam\Native\Observability\ExporterStatus;
+use Pam\Native\Observability\SentryExporter;
+
+// Once, at boot.
+Observability::exporter(
+    SentryExporter::dsn('https://public@o1.ingest.sentry.io/42')
+        ->environment('production')
+        ->release('chat@2.4.0+118')
+        ->tracesSampleRate(0.25),
+);
+
+Observability::user('42');                                  // after sign-in; user(null) on sign-out
+Observability::breadcrumb('Opened chat 42', 'navigation');
+Observability::capture($error, tags: ['screen' => 'chat']); // handled throwable
+$result = Observability::guard(fn () => $repository->load()); // report and rethrow
+Observability::exporterStatus(fn (ExporterStatus $s) => ...); // diagnostics screen
+Observability::exporterTest(fn (bool $ok, string $idOrError) => ...);
+```
+
+What is captured:
+
+| Source | How |
+| --- | --- |
+| JVM crashes and ANRs | Sentry Android SDK (`->anr(true, 5000)`) |
+| Native crashes, including the embedded PHP runtime | Sentry NDK integration (`->nativeCrashes()`) |
+| Crashes before PHP boots | the configuration is persisted (`->persist()`) and restored by a ContentProvider on the next launch |
+| PHP uncaught exceptions, `E_WARNING`/`E_USER_*` errors, fatal shutdowns | handlers installed by `->capturePhpErrors()` (previous handlers are chained) |
+| Handled PHP errors | `Observability::capture()`, `message()`, `guard()` and the existing `$telemetry->crash()` |
+
+PHP events carry PHP stack frames (oldest first, `vendor/` frames marked as not
+in-app) and up to five chained causes. Identical events are de-duplicated for
+60 s and PHP-originated events are rate limited (`->rateLimit(30)` per
+minute): every native call completion costs a PAM render, so error storms must
+not reach the bridge. Personal data is off by default (`->sendDefaultPii()`).
+The Sentry manifest auto-init is disabled; the DSN comes only from PHP.
+
+Known limit: exceptions thrown inside PAM callbacks are caught by the
+framework runtime (error overlay) and do not reach PHP's global exception
+handler. Wrap critical callbacks with `Observability::guard()` or call
+`capture()` until the framework exposes an error hook.
+
+Android API 26+. On iOS the exporter calls report a module failure and PHP
+forwarding is a no-op.
+
+Instrumented suite (sends real envelopes to a loopback MockWebServer):
+
+```bash
+cd android && ANDROID_SERIAL=emulator-5558 \
+  ../../../pam-native/android/gradlew -p . connectedDebugAndroidTest
+```
 
 ## Certified OTLP export
 
@@ -161,7 +216,7 @@ All coded states, kinds, and variants are sequential integer-backed enums. Use e
 
 ## Compatibility and support
 
-This package targets PAM Native `0.8.x`, Android API 26+, and iOS 15+ unless a platform-specific section above states a stricter requirement. Platform SDKs, credentials, entitlements, physical hardware, and store configuration remain application responsibilities.
+This package targets PAM Native `>=1.0.35 <2.0.0`, Android API 26+, and iOS 15+ unless a platform-specific section above states a stricter requirement. Platform SDKs, credentials, entitlements, physical hardware, and store configuration remain application responsibilities.
 
 - [PAM documentation](https://push-in.github.io/pam-docs/introduction/)
 - [PAM Native overview](https://push-in.github.io/pam-docs/native/overview/)

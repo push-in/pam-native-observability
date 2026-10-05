@@ -1,0 +1,11 @@
+{
+  "$schema": "vendor/pushinbr/pam-native-plugin-kit/resources/pam-native.idl.schema.json",
+  "version": 1,
+  "namespace": "Pam.Observability",
+  "enums": {
+    "Severity": {"Debug": 1, "Info": 2, "Warning": 3, "Error": 4, "Fatal": 5}
+  },
+  "records": {
+    "ExporterStatus": {"enabled": "bool", "host": "string", "environment": "string", "release": "string", "nativeCrashes": "bool", "anr": "bool", "lastEventId": "string?", "platform": "string", "error": "string"}
+  }
+}

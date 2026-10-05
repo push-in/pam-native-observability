@@ -1,0 +1,2 @@
+-keep class dev.pam.observability.ObservabilityModule { <init>(android.content.Context); }
+-keep class dev.pam.observability.SentryBootstrap { <init>(); }

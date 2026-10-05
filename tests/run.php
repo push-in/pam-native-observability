@@ -13,6 +13,9 @@ use Pam\Native\Observability\TelemetryTransport;
 use Pam\Native\Observability\TraceContext;
 use Pam\Native\Observability\WireProtocol;
 $root = dirname(__DIR__);
+if (is_file($root.'/vendor/autoload.php')) {
+    require $root.'/vendor/autoload.php';
+}
 if (!class_exists(Observability::class)) {
     spl_autoload_register(static function (string $class) use ($root): void {
         $prefix = 'Pam\\Native\\Observability\\';
@@ -295,5 +298,7 @@ test('OTLP partial success is treated as delivery failure', static function (): 
         'partial rejection must fail delivery',
     );
 });
+
+require __DIR__.'/sentry.php';
 
 echo "{$tests} tests, 0 failures\n";
