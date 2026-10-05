@@ -13,7 +13,7 @@
     "dependencies": ["io.sentry:sentry-android-core:8.50.1", "io.sentry:sentry-android-ndk:8.50.1"],
     "sourceDirs": ["android/src/main/kotlin"]
   },
-  "ios": {"minimumVersion": "15.0", "sourceDirs": ["ios/Sources"]},
+  "ios": {"minimumVersion": "15.0", "sourceDirs": ["ios/Sources"], "swiftPackages": [{"url": "https://github.com/getsentry/sentry-cocoa.git", "requirement": {"kind": 2, "value": "8.40.0"}, "products": ["Sentry"]}]},
   "idl": "pam-native.idl.json",
   "modules": [{"name": "observability", "class": "dev.pam.observability.ObservabilityModule", "iosClass": "ObservabilityModule"}],
   "views": []

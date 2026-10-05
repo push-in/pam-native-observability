@@ -131,8 +131,14 @@ framework runtime (error overlay) and do not reach PHP's global exception
 handler. Wrap critical callbacks with `Observability::guard()` or call
 `capture()` until the framework exposes an error hook.
 
-Android API 26+. On iOS the exporter calls report a module failure and PHP
-forwarding is a no-op.
+Android API 26+ and iOS 15+. On iOS the exporter runs on the Sentry Cocoa SDK
+(8.x Swift package): native crashes (signal/Mach handler), app hangs
+(`anr()`/`anrTimeoutMs`), PHP events with PHP stack frames, breadcrumbs,
+user, tags, flush, status and the diagnostic test event. The persisted
+configuration starts Sentry when the module is created at launch, before the
+PHP runtime runs. Upload dSYMs for symbolicated native frames. The iOS
+implementation has not been validated on a device yet; see
+`ios/Tests/SentryBridgeTests.swift`.
 
 Instrumented suite (sends real envelopes to a loopback MockWebServer):
 

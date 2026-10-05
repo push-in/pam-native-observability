@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 - 2026-10-05
+
+### Added
+
+- iOS Sentry exporter on the Sentry Cocoa SDK (8.x Swift package): crash
+  handler, app-hang tracking, PHP events with stack frames and mechanisms,
+  breadcrumbs, user, tags, flush, status, diagnostic test and stop; the
+  configuration is persisted and restored at launch. Same module contract as
+  Android.
+- XCTest mirror (`ios/Tests`). Uncompiled on the release machine; needs
+  device validation.
+
 ## 0.3.0 - 2026-10-05
 
 ### Added
