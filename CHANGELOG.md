@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1 - 2026-10-06
+
+### Changed
+
+- The persisted exporter is restored off the UI thread. On Android
+  `SentryBootstrap` ran `SentryAndroid.init` (options, NDK library) inside
+  the content provider: ~21 ms of UI-thread time on a Galaxy S10 before the
+  first Activity was created, on every cold start. It now runs on a
+  background thread, and the module's own restore runs on its worker ahead of
+  the PHP calls. On iOS the module restores it from its worker, so
+  `SentrySDK.start` reaches the main thread after the launch returns,
+  overlapping the PHP boot. A React Native app starts the SDK from
+  JavaScript, after its first frame; crashes in the first milliseconds of a
+  process (before the SDK is up) are no longer reported.
+  iOS uncompiled on the release machine; needs device validation.
+
 ## 0.5.0 - 2026-10-06
 
 ### Added

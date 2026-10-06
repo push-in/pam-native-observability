@@ -32,7 +32,10 @@ internal object SentryBridge {
     @Volatile var lastError: String = ""
         private set
 
-    /** Starts Sentry from the persisted configuration, if any. Safe to call repeatedly. */
+    /**
+     * Starts Sentry from the persisted configuration, if any. Safe to call
+     * repeatedly and from any thread; a concurrent start() wins the lock.
+     */
     fun bootstrap(context: Context) {
         if (activeConfig != null) return
         val stored = runCatching { preferences(context).getString(KEY_CONFIG, null) }.getOrNull() ?: return

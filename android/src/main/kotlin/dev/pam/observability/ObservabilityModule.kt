@@ -21,7 +21,8 @@ class ObservabilityModule(context: Context) : NativeModule, AutoCloseable {
     }
 
     init {
-        SentryBridge.bootstrap(this.context)
+        // Off the UI thread, ahead of every queued PHP call (same worker).
+        worker.execute { runCatching { SentryBridge.bootstrap(this.context) } }
     }
 
     override fun invoke(method: String, payload: ByteArray, completion: ModuleCompletion) {
@@ -93,8 +94,18 @@ class ObservabilityModule(context: Context) : NativeModule, AutoCloseable {
  * process starts, before the PHP runtime and the module registry exist.
  */
 class SentryBootstrap : ContentProvider() {
+    /**
+     * Restores the persisted exporter on a background thread. `SentryAndroid.init`
+     * costs ~21 ms of UI-thread time on a Galaxy S10 (options, NDK library);
+     * on the UI thread it delayed every cold start's first frame, while a React
+     * Native app starts the SDK from JavaScript, after its first frame.
+     */
     override fun onCreate(): Boolean {
-        context?.let { runCatching { SentryBridge.bootstrap(it) } }
+        val application = context?.applicationContext ?: return true
+        Thread(
+            { runCatching { SentryBridge.bootstrap(application) } },
+            "pam-observability-boot",
+        ).apply { isDaemon = true }.start()
         return true
     }
 

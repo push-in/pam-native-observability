@@ -9,9 +9,12 @@ public final class ObservabilityModule: NativeModule, ClosableNativeModule, @unc
     private let worker = DispatchQueue(label: "pam-observability", qos: .utility)
 
     public init() {
-        // Modules are created while the app launches: start Sentry from the
-        // persisted configuration before the PHP runtime runs any code.
-        SentryBridge.bootstrap()
+        // Modules are created while the app launches. Restore the persisted
+        // exporter from the worker (ahead of every queued PHP call): the SDK
+        // start itself hops to the main thread once the launch returned, so
+        // it overlaps the PHP boot instead of delaying the first frame
+        // (Android parity: SentryBootstrap starts it off the UI thread).
+        worker.async { SentryBridge.bootstrap() }
     }
 
     public func invoke(method: String, payload: Data, completion: @escaping ModuleCompletion) {
