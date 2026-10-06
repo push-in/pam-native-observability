@@ -127,10 +127,22 @@ minute): every native call completion costs a PAM render, so error storms must
 not reach the bridge. Personal data is off by default (`->sendDefaultPii()`).
 The Sentry manifest auto-init is disabled; the DSN comes only from PHP.
 
-Known limit: exceptions thrown inside PAM callbacks are caught by the
-framework runtime (error overlay) and do not reach PHP's global exception
-handler. Wrap critical callbacks with `Observability::guard()` or call
-`capture()` until the framework exposes an error hook.
+Exceptions thrown inside PAM callbacks (renders, event handlers, module
+results) are caught by the framework runtime (error overlay) and do not reach
+PHP's global exception handler. Since PAM Native 1.7.0 the runtime exposes them
+through `App::onError()`; forward them once at boot:
+
+```php
+use Pam\Native\App;
+use Pam\Native\Diagnostics\RuntimeError;
+
+App::onError(function (Throwable $error, RuntimeError $context): void {
+    Observability::capture($error, handled: !$context->fatal(), tags: ['phase' => $context->phase->value]);
+});
+```
+
+On older PAM Native versions wrap critical callbacks with
+`Observability::guard()` or call `capture()` yourself.
 
 Android API 26+ and iOS 15+. On iOS the exporter runs on the Sentry Cocoa SDK
 (8.x Swift package): native crashes (signal/Mach handler), app hangs
@@ -184,24 +196,135 @@ redaction.
 
 ## What installation does
 
-`pam add observability` resolves the official compatible package, performs a non-mutating Composer preflight, updates the normal `composer.json` and `composer.lock`, refreshes generated native integration when required, and leaves the project ready for `pam doctor` validation.
+`pam add observability` (or `pam composer require pushinbr/pam-native-observability` followed by `pam doctor --fix`) resolves the official compatible package, performs a non-mutating Composer preflight, updates the normal `composer.json` and `composer.lock`, refreshes generated native integration when required, and leaves the project ready for `pam doctor` validation. The package is a PAM Native plugin (module `observability`); nothing is added to `pam-native.json`. The pure-PHP telemetry pipeline (`Observability` instances, encoders, transports) also works outside PAM Native.
 
 Use `pam packages` to inspect availability and `pam remove observability` to uninstall the capability safely. Direct Composer commands are an advanced interoperability path; PAM is the supported application workflow.
 
-## API guide
+- **Android:** merged permissions `INTERNET` and `ACCESS_NETWORK_STATE`.
+  Dependencies `io.sentry:sentry-android-core` and `sentry-android-ndk`
+  `8.50.1`. The manifest disables Sentry's auto-init
+  (`io.sentry.auto-init=false`, `SentryInitProvider` removed) and adds the
+  `SentryBootstrap` content provider that restores the persisted exporter
+  before PHP boots.
+- **iOS:** Swift package `getsentry/sentry-cocoa` from `8.40.0` (up to next
+  major), product `Sentry`. No Info.plist keys. Upload dSYMs to Sentry for
+  symbolicated native frames.
+- `CurlTelemetryTransport` needs the PHP `curl` extension; implement
+  `TelemetryTransport` when it is not available.
 
-| API | Responsibility |
+## A real example: Zé Chat
+
+Zé Chat starts the Sentry exporter once at boot, before the first screen
+renders, so crashes of the embedded PHP runtime and ANRs are reported from the
+first launch; the configuration is persisted for crashes that happen before
+PHP boots on the next launch:
+
+```php
+use Pam\Native\Observability\{ExporterStatus, Observability, SentryExporter};
+
+final class CrashReporting
+{
+    private static bool $started = false;
+
+    public static function start(): void
+    {
+        if (self::$started) {
+            return;
+        }
+        self::$started = true;
+        Observability::exporter(
+            SentryExporter::dsn('https://public@sentry.example.com/14')
+                ->environment('production')
+                ->tracesSampleRate(0.25)
+                ->profilesSampleRate(0.05),   // 0.5.0+
+        );
+    }
+}
+
+// Settings → Diagnostics screen.
+Observability::exporterStatus(fn (ExporterStatus $s) => $this->sentry = $s->enabled ? "{$s->host} ({$s->environment})" : $s->error);
+Observability::exporterTest(fn (bool $ok, string $idOrError) => $this->toast($ok ? "Sent {$idOrError}" : $idOrError));
+```
+
+A runnable minimal app is in [`example/`](example).
+
+## API reference
+
+All classes live in `Pam\Native\Observability`.
+
+### Sentry exporter (static, module `observability`)
+
+| Method | Description |
 | --- | --- |
-| `Observability` | Create spans, logs, counters, gauges, crash context, and flush batches. |
-| `ObservabilityConfig` | Set endpoint, service identity, sampling, queue, and batch policy. |
-| `WireProtocol` | Select compatible PAM JSON (`1`) or OTLP/HTTP JSON (`2`). |
-| `Span` / `SpanStatus` | Capture timed operations, status, attributes, and exceptions. |
-| `TraceContext` | Validate a W3C version `00` parent and continue its sampling/lineage. |
-| `TelemetryTransport` | Implement vendor, collector, gateway, or offline delivery. |
-| `CurlTelemetryTransport` | Send batches through the dependency-light default HTTPS transport. |
-| `Severity` / `SignalKind` | Typed log severity and signal categories. |
+| `Observability::exporter(SentryExporter $exporter, ?Closure(bool, ?string) $then = null): int` | Starts (or reconfigures) the native Sentry SDK and installs the PHP handlers. |
+| `capture(Throwable $error, bool $handled = true, array $tags = [], array $extra = [], ?Closure(?string) $then = null): bool` | Reports a throwable (with PHP frames and up to five causes); `$then` receives the event id. Returns `false` when nothing is sent (no exporter, duplicate within 60 s, rate limit). |
+| `message(string $message, Severity $level = Info, array $tags = [], ?Closure(?string) $then = null): bool` | Reports a message. |
+| `breadcrumb(string $message, string $category = 'app', array $data = [], Severity $level = Info): void` | Adds a breadcrumb. |
+| `user(?string $id, ?string $email = null, ?string $username = null): void`, `tag(string $key, string $value): void` | Scope. |
+| `guard(Closure(): T $body): T` | Runs `$body`, reports and rethrows any throwable. |
+| `exporterFlush(int $timeoutMillis = 2000, ?Closure $then = null)` | Flushes queued events (0–30000 ms). |
+| `exporterStatus(Closure(ExporterStatus) $then)`, `exporterTest(Closure(bool, string) $then)`, `exporterStop(?Closure $then = null)` | Diagnostics and shutdown. |
 
-All coded states, kinds, and variants are sequential integer-backed enums. Use enum cases in application code; do not depend on raw wire numbers.
+`SentryExporter` (immutable builder): `dsn(string $dsn)` (HTTPS; HTTP only on
+loopback), `environment()`, `release()`, `dist()`, `sampleRate(float)`,
+`tracesSampleRate(float)`, `profilesSampleRate(float)` (0.5.0+, needs traces),
+`sendDefaultPii(bool = true)` (off by default), `debug()`,
+`tag(string, string)`, `tags(array)`, `anr(bool = true, int $timeoutMillis = 5000)`
+(1000–60000), `nativeCrashes(bool = true)`, `persist(bool = true)`,
+`maxBreadcrumbs(int)` (0–500, default 100),
+`capturePhpErrors(bool = true, int $levels = E_WARNING | E_USER_WARNING | E_USER_ERROR | E_RECOVERABLE_ERROR)`,
+`rateLimit(int $eventsPerMinute = 30)` (1–600); `capturesPhpErrors()`,
+`phpErrorLevels()`, `eventsPerMinute()`, `toWire()`. ANR, native crashes,
+persistence and PHP error capture are on by default.
+
+`ExporterStatus` (readonly): `enabled`, `host`, `environment`, `release`,
+`nativeCrashes`, `anr`, `lastEventId`, `platform`, `error`.
+
+### Telemetry pipeline (instances)
+
+| API | Description |
+| --- | --- |
+| `new Observability(ObservabilityConfig $config, TelemetryTransport $transport)` | Bounded queue and batching. |
+| `context(array $values)` | Resource attributes added to every signal. |
+| `span(string $name, Span\|TraceContext\|null $parent = null): Span` | Starts a span (child of a span or a remote W3C context). |
+| `log(Severity $severity, string $message, array $attributes = [])` | Structured log. |
+| `counter(string $name, int\|float $value = 1, array $attributes = [])`, `gauge(string $name, int\|float $value, array $attributes = [])` | Metrics (counters use delta temporality in OTLP). |
+| `crash(Throwable $error, bool $handled = false)` | Crash context (details only with `captureExceptionDetails`). |
+| `flush(): int` | Sends queued batches; returns the number of signals sent. A transport failure restores the batch and rethrows. |
+| `queued(): int`, `dropped(): int` | Backpressure diagnostics. |
+
+`ObservabilityConfig(string $endpoint, string $serviceName, string $serviceVersion = '0.0.0', float $sampleRate = 1.0, int $batchSize = 64, int $maxQueue = 1024, int $timeoutMillis = 5000, array $headers = [], WireProtocol $wireProtocol = PamJson, bool $captureExceptionDetails = false)`.
+`Span` (readonly `name`, `traceId`, `spanId`, `parentSpanId`, `traceFlags`):
+`attribute(string, scalar)`, `status(SpanStatus)`, `exception(Throwable)`,
+`end()` (also on destruction). `TraceContext`: `fromTraceparent(string)`,
+`traceparent()`, `sampled()`, readonly `traceId`, `spanId`, `flags`.
+
+Transports implement `TelemetryTransport::send(string $endpoint, string $body, array $headers, int $timeoutMillis): void`
+and throw to signal a failed delivery. `CurlTelemetryTransport` is the
+default. `TelemetryEncoder`, `PamJsonEncoder`, `OtlpHttpJsonEncoder`,
+`EncodedTelemetry`, `OtlpResponse` and `EndpointPolicy` (`valid()`,
+`permitsHttp()`) are the building blocks.
+
+### Enums (int-backed)
+
+| Enum | Cases |
+| --- | --- |
+| `Severity` | `Debug = 1`, `Info`, `Warning`, `Error`, `Fatal = 5`; `otlpNumber()`, `otlpText()` |
+| `SpanStatus` | `Unset = 1`, `Ok`, `Error` |
+| `SignalKind` | `Span = 1`, `Log`, `Counter`, `Gauge`, `Crash = 5`; `family()` |
+| `SignalFamily` | `Trace = 1`, `Log`, `Metric` |
+| `WireProtocol` | `PamJson = 1`, `OtlpHttpJson = 2` |
+
+### Errors
+
+`InvalidArgumentException` for an invalid DSN, sample rates outside 0–1, ANR
+timeouts outside 1–60 s, breadcrumb limits outside 0–500, rate limits outside
+1–600, invalid tag keys, span or metric names, telemetry headers, configuration
+values and `traceparent` headers. `CurlTelemetryTransport` throws
+`RuntimeException` without the curl extension and on failed or partially
+rejected (`partialSuccess`) deliveries; `flush()` puts the batch back at the
+front of the queue and rethrows. The static Sentry methods never throw for
+delivery problems.
 
 ## Production checklist
 
@@ -222,6 +345,12 @@ All coded states, kinds, and variants are sequential integer-backed enums. Use e
 - **Native integration is stale:** run `pam doctor --fix`, rebuild the native host, and inspect the first reported diagnostic.
 
 ## Compatibility and support
+
+| `pushinbr/pam-native-observability` | `pushinbr/pam-native` | Android | iOS |
+| --- | --- | --- | --- |
+| 0.5.x | `>=1.0.35 <2.0.0` (tested with 1.14.x; `App::onError()` needs 1.7+) | API 26+, Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
+| 0.4.x | `>=1.0.35 <2.0.0` | API 26+ | 15+ |
+| 0.3.x | `>=1.0.35 <2.0.0` | API 26+ | Telemetry pipeline only |
 
 This package targets PAM Native `>=1.0.35 <2.0.0`, Android API 26+, and iOS 15+ unless a platform-specific section above states a stricter requirement. Platform SDKs, credentials, entitlements, physical hardware, and store configuration remain application responsibilities.
 
