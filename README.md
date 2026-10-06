@@ -98,7 +98,8 @@ Observability::exporter(
     SentryExporter::dsn('https://public@o1.ingest.sentry.io/42')
         ->environment('production')
         ->release('chat@2.4.0+118')
-        ->tracesSampleRate(0.25),
+        ->tracesSampleRate(0.25)
+        ->profilesSampleRate(0.05),   // opt-in; profiles a share of the traced transactions
 );
 
 Observability::user('42');                                  // after sign-in; user(null) on sign-out

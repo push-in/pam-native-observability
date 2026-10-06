@@ -127,6 +127,7 @@ enum SentryBridge {
                 if let dist = text("dist") { options.dist = dist }
                 options.sampleRate = NSNumber(value: (config["sampleRate"] as? NSNumber)?.doubleValue ?? 1)
                 if let traces = config["tracesSampleRate"] as? NSNumber { options.tracesSampleRate = traces }
+                if let profiles = config["profilesSampleRate"] as? NSNumber { options.profilesSampleRate = profiles }
                 options.sendDefaultPii = (config["sendDefaultPii"] as? Bool) ?? false
                 options.debug = (config["debug"] as? Bool) ?? false
                 options.maxBreadcrumbs = UInt(max((config["maxBreadcrumbs"] as? NSNumber)?.intValue ?? 100, 0))

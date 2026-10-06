@@ -58,6 +58,7 @@ internal object SentryBridge {
                 config.optString("dist").takeIf { it.isNotEmpty() }?.let { options.dist = it }
                 options.sampleRate = config.optDouble("sampleRate", 1.0)
                 if (config.has("tracesSampleRate")) options.tracesSampleRate = config.getDouble("tracesSampleRate")
+                if (config.has("profilesSampleRate")) options.profilesSampleRate = config.getDouble("profilesSampleRate")
                 options.isSendDefaultPii = config.optBoolean("sendDefaultPii", false)
                 options.isDebug = config.optBoolean("debug", false)
                 options.maxBreadcrumbs = config.optInt("maxBreadcrumbs", 100)

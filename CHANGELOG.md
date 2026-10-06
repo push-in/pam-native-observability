@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 - 2026-10-06
+
+### Added
+
+- `SentryExporter::profilesSampleRate()`: Sentry transaction profiling on
+  Android (`SentryOptions.profilesSampleRate`) and iOS
+  (`Options.profilesSampleRate`). Opt-in, needs `tracesSampleRate()`.
+  PHP contract test, Android instrumented assertion and XCTest mirror
+  (iOS uncompiled on the release machine; needs device validation).
+
 ## 0.4.0 - 2026-10-05
 
 ### Added

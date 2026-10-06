@@ -27,9 +27,10 @@ final class SentryBridgeTests: XCTestCase {
     }
 
     func testInitCaptureBreadcrumbUserStatusAndStop() throws {
-        let config = #"{"dsn":"https://key@127.0.0.1:9/1","environment":"test","release":"app@1","tags":{"team":"chat"},"persist":true}"#
+        let config = #"{"dsn":"https://key@127.0.0.1:9/1","environment":"test","release":"app@1","tracesSampleRate":0.25,"profilesSampleRate":0.05,"tags":{"team":"chat"},"persist":true}"#
         XCTAssertTrue(call("sentryInit", ["config": .text(config)]).ok)
         XCTAssertTrue(SentrySDK.isEnabled)
+        XCTAssertEqual(SentrySDK.currentHub().getClient()?.options.profilesSampleRate?.doubleValue, 0.05)
         XCTAssertNotNil(UserDefaults.standard.string(forKey: "dev.pam.observability.sentry.config"))
         XCTAssertTrue(call("sentryBreadcrumb", ["breadcrumb": .text(#"{"message":"opened chat","category":"nav","level":2,"data":{"id":7}}"#)]).ok)
         XCTAssertTrue(call("sentryUser", ["id": .text("u1"), "email": .text(""), "username": .text("ana")]).ok)

@@ -37,6 +37,8 @@ final class SentryExporter
 
     private ?float $tracesSampleRate = null;
 
+    private ?float $profilesSampleRate = null;
+
     private bool $sendDefaultPii = false;
 
     private bool $debug = false;
@@ -112,6 +114,17 @@ final class SentryExporter
     public function tracesSampleRate(float $rate): self
     {
         $this->tracesSampleRate = self::rate($rate);
+
+        return $this;
+    }
+
+    /**
+     * Profiles this fraction of the sampled transactions (0..1). Needs
+     * `tracesSampleRate()`: only traced transactions can be profiled.
+     */
+    public function profilesSampleRate(float $rate): self
+    {
+        $this->profilesSampleRate = self::rate($rate);
 
         return $this;
     }
@@ -245,6 +258,9 @@ final class SentryExporter
         ];
         if ($this->tracesSampleRate !== null) {
             $wire['tracesSampleRate'] = $this->tracesSampleRate;
+        }
+        if ($this->profilesSampleRate !== null) {
+            $wire['profilesSampleRate'] = $this->profilesSampleRate;
         }
 
         return $wire;

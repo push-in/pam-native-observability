@@ -110,6 +110,7 @@ test('Sentry exporter validates and serializes its configuration', static functi
             ->dist('118')
             ->sampleRate(1.0)
             ->tracesSampleRate(0.25)
+            ->profilesSampleRate(0.05)
             ->tags(['app' => 'zechat'])
             ->anr(true, 5000)
             ->nativeCrashes()
@@ -120,6 +121,9 @@ test('Sentry exporter validates and serializes its configuration', static functi
     same('https://7877af@sentry.pushin.test/14', $config['dsn'] ?? null, 'dsn');
     same('zechat@2.4.0+118', $config['release'] ?? null, 'release');
     same(0.25, $config['tracesSampleRate'] ?? null, 'traces');
+    same(0.05, $config['profilesSampleRate'] ?? null, 'profiles');
+    same(false, array_key_exists('profilesSampleRate', SentryExporter::dsn('https://k@sentry.pushin.test/1')->toWire()), 'profiling is opt-in');
+    throws(static fn () => SentryExporter::dsn('https://k@sentry.pushin.test/1')->profilesSampleRate(1.5), 'profiles rate above 1 accepted');
     same(['app' => 'zechat'], $config['tags'] ?? null, 'tags');
     same([true, true, true], [$config['nativeCrashes'] ?? null, $config['anr'] ?? null, $config['persist'] ?? null], 'native capture defaults');
     same(false, $config['sendDefaultPii'] ?? null, 'no PII by default');

@@ -7,6 +7,7 @@ import dev.pam.nativeapp.modules.ModuleCompletion
 import dev.pam.nativeapp.modules.ModuleResultStatus
 import dev.pam.nativeapp.protocol.WireMap
 import dev.pam.nativeapp.protocol.WireValue
+import io.sentry.Sentry
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -73,6 +74,8 @@ class SentryExporterInstrumentedTest {
             .put("dsn", dsn)
             .put("environment", "test")
             .put("release", "app@1.2.3")
+            .put("tracesSampleRate", 0.25)
+            .put("profilesSampleRate", 0.05)
             .put("tags", JSONObject().put("app", "pam-test"))
         val result = call("sentryInit", "config" to WireValue.Text(config.toString()))
         assertTrue(result.message, result.ok)
@@ -101,6 +104,8 @@ class SentryExporterInstrumentedTest {
         assertEquals("test", status.getString("environment"))
         assertTrue("NDK integration available", status.getBoolean("nativeCrashes"))
         assertTrue(status.getBoolean("anr"))
+        assertEquals(0.05, Sentry.getCurrentScopes().options.profilesSampleRate!!, 0.0)
+        assertEquals(0.25, Sentry.getCurrentScopes().options.tracesSampleRate!!, 0.0)
         val stored = context.getSharedPreferences("dev.pam.observability.sentry", Context.MODE_PRIVATE).getString("config", null)
         assertTrue(stored!!.contains("app@1.2.3"))
 
