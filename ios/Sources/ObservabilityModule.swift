@@ -249,8 +249,8 @@ enum SentryBridge {
 
     private static func exception(_ json: [String: Any], handled: Bool) -> Sentry.Exception {
         let exception = Sentry.Exception(value: json["value"] as? String ?? "", type: json["type"] as? String ?? "Error")
-        let frames = (json["frames"] as? [[String: Any]] ?? []).map { item -> Frame in
-            let frame = Frame()
+        let frames = (json["frames"] as? [[String: Any]] ?? []).map { item -> Sentry.Frame in
+            let frame = Sentry.Frame()
             frame.fileName = (item["file"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             frame.function = (item["function"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             frame.module = (item["module"] as? String).flatMap { $0.isEmpty ? nil : $0 }
