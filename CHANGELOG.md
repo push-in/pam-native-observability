@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Frame metrics are opt-in with `framesTracking()`. On iOS the SDK's frames tracker
+  (automatic performance instrumentation) kept a display link ticking every
+  frame in the foreground, idle or not; it is now off unless requested.
+
 ## 0.5.1 - 2026-10-06
 
 ### Changed

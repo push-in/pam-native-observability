@@ -137,6 +137,10 @@ enum SentryBridge {
                 options.enableAppHangTracking = (config["anr"] as? Bool) ?? true
                 options.appHangTimeoutInterval = Double((config["anrTimeoutMs"] as? NSNumber)?.int64Value ?? 5_000) / 1_000
                 options.enableCrashHandler = (config["nativeCrashes"] as? Bool) ?? true
+                // Opt-in: the automatic performance instrumentation starts the
+                // frames tracker, a CADisplayLink that ticks every frame for the
+                // life of the foreground app (battery), even when nothing draws.
+                options.enableAutoPerformanceTracing = (config["framesTracking"] as? Bool) ?? false
                 options.maxCacheItems = 60
                 let tags = (config["tags"] as? [String: Any] ?? [:]).compactMapValues { $0 as? String }
                 options.initialScope = { scope in

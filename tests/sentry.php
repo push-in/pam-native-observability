@@ -127,6 +127,8 @@ test('Sentry exporter validates and serializes its configuration', static functi
     same(['app' => 'zechat'], $config['tags'] ?? null, 'tags');
     same([true, true, true], [$config['nativeCrashes'] ?? null, $config['anr'] ?? null, $config['persist'] ?? null], 'native capture defaults');
     same(false, $config['sendDefaultPii'] ?? null, 'no PII by default');
+    same(false, $config['framesTracking'] ?? null, 'frames tracking is opt-in');
+    same(true, SentryExporter::dsn('https://k@sentry.pushin.test/1')->framesTracking()->toWire()['framesTracking'], 'frames tracking opt-in');
     same(true, $ok, 'init completion');
     foreach (['https://sentry.example.test/14', 'http://key@sentry.example.test/14', 'https://key@sentry.example.test/project', 'ftp://key@h/1'] as $invalid) {
         throws(static fn () => SentryExporter::dsn($invalid), 'invalid DSN accepted: '.$invalid);
