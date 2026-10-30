@@ -270,7 +270,7 @@ loopback), `environment()`, `release()`, `dist()`, `sampleRate(float)`,
 `tracesSampleRate(float)`, `profilesSampleRate(float)` (0.5.0+, needs traces),
 `sendDefaultPii(bool = true)` (off by default), `debug()`,
 `tag(string, string)`, `tags(array)`, `anr(bool = true, int $timeoutMillis = 5000)`
-(1000–60000), `nativeCrashes(bool = true)`, `persist(bool = true)`,
+(1000–60000), `nativeCrashes(bool = true)`, `framesTracking(bool = true)` (off unless called; on iOS it keeps a display link running in the foreground), `persist(bool = true)`,
 `maxBreadcrumbs(int)` (0–500, default 100),
 `capturePhpErrors(bool = true, int $levels = E_WARNING | E_USER_WARNING | E_USER_ERROR | E_RECOVERABLE_ERROR)`,
 `rateLimit(int $eventsPerMinute = 30)` (1–600); `capturesPhpErrors()`,

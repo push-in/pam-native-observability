@@ -137,6 +137,10 @@ enum SentryBridge {
                 options.enableAppHangTracking = (config["anr"] as? Bool) ?? true
                 options.appHangTimeoutInterval = Double((config["anrTimeoutMs"] as? NSNumber)?.int64Value ?? 5_000) / 1_000
                 options.enableCrashHandler = (config["nativeCrashes"] as? Bool) ?? true
+                // Opt-in: the automatic performance instrumentation starts the
+                // frames tracker, a CADisplayLink that ticks every frame for the
+                // life of the foreground app (battery), even when nothing draws.
+                options.enableAutoPerformanceTracing = (config["framesTracking"] as? Bool) ?? false
                 options.maxCacheItems = 60
                 let tags = (config["tags"] as? [String: Any] ?? [:]).compactMapValues { $0 as? String }
                 options.initialScope = { scope in
@@ -249,8 +253,8 @@ enum SentryBridge {
 
     private static func exception(_ json: [String: Any], handled: Bool) -> Sentry.Exception {
         let exception = Sentry.Exception(value: json["value"] as? String ?? "", type: json["type"] as? String ?? "Error")
-        let frames = (json["frames"] as? [[String: Any]] ?? []).map { item -> Frame in
-            let frame = Frame()
+        let frames = (json["frames"] as? [[String: Any]] ?? []).map { item -> Sentry.Frame in
+            let frame = Sentry.Frame()
             frame.fileName = (item["file"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             frame.function = (item["function"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             frame.module = (item["module"] as? String).flatMap { $0.isEmpty ? nil : $0 }
