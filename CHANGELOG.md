@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- PHP errors the runtime catches are forwarded to Sentry. What escapes an
+  event handler, a render, a module result or a promise is caught by PAM
+  Native (developer overlay or release fallback) and never reached the
+  exception handler, so only boot errors and fatals were reported. The
+  exporter now listens to `Diagnostics\ErrorReporter` (when PHP errors are
+  captured): unhandled, `Fatal` for render/boot and `Error` otherwise, with a
+  `pam.phase` tag and the `pam.php.runtime` mechanism.
+
+- Frame metrics are opt-in with `framesTracking()`. On iOS the SDK's frames tracker
+  (automatic performance instrumentation) kept a display link ticking every
+  frame in the foreground, idle or not; it is now off unless requested.
+
 ## 0.5.1 - 2026-10-06
 
 ### Changed

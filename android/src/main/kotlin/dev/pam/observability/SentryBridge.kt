@@ -68,6 +68,7 @@ internal object SentryBridge {
                 options.isAnrEnabled = config.optBoolean("anr", true)
                 options.anrTimeoutIntervalMillis = config.optLong("anrTimeoutMs", 5_000)
                 options.isEnableNdk = config.optBoolean("nativeCrashes", true)
+                options.isEnableFramesTracking = config.optBoolean("framesTracking", false)
                 options.maxCacheItems = 60
                 options.setTag("pam.runtime", "pam-native")
                 config.optJSONObject("tags")?.let { tags -> tags.keys().forEach { options.setTag(it, tags.getString(it)) } }

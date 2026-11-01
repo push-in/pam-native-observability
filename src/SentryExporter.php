@@ -52,6 +52,8 @@ final class SentryExporter
 
     private bool $nativeCrashes = true;
 
+    private bool $framesTracking = false;
+
     private bool $persist = true;
 
     private int $maxBreadcrumbs = 100;
@@ -181,6 +183,20 @@ final class SentryExporter
         return $this;
     }
 
+    /**
+     * Slow/frozen frame metrics (off by default). On iOS this turns on the
+     * SDK's automatic performance instrumentation, whose frames tracker keeps
+     * a display link ticking every frame while the app is in the foreground,
+     * even when nothing is drawn; enable it only for a profiling build or a
+     * sampled cohort. Android reads frame metrics only when frames are drawn.
+     */
+    public function framesTracking(bool $enabled = true): self
+    {
+        $this->framesTracking = $enabled;
+
+        return $this;
+    }
+
     /** Persist the configuration so the next launch starts Sentry before PHP boots (default on). */
     public function persist(bool $enabled = true): self
     {
@@ -253,6 +269,7 @@ final class SentryExporter
             'anr' => $this->anr,
             'anrTimeoutMs' => $this->anrTimeoutMillis,
             'nativeCrashes' => $this->nativeCrashes,
+            'framesTracking' => $this->framesTracking,
             'persist' => $this->persist,
             'maxBreadcrumbs' => $this->maxBreadcrumbs,
         ];

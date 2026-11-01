@@ -127,6 +127,8 @@ test('Sentry exporter validates and serializes its configuration', static functi
     same(['app' => 'zechat'], $config['tags'] ?? null, 'tags');
     same([true, true, true], [$config['nativeCrashes'] ?? null, $config['anr'] ?? null, $config['persist'] ?? null], 'native capture defaults');
     same(false, $config['sendDefaultPii'] ?? null, 'no PII by default');
+    same(false, $config['framesTracking'] ?? null, 'frames tracking is opt-in');
+    same(true, SentryExporter::dsn('https://k@sentry.pushin.test/1')->framesTracking()->toWire()['framesTracking'], 'frames tracking opt-in');
     same(true, $ok, 'init completion');
     foreach (['https://sentry.example.test/14', 'http://key@sentry.example.test/14', 'https://key@sentry.example.test/project', 'ftp://key@h/1'] as $invalid) {
         throws(static fn () => SentryExporter::dsn($invalid), 'invalid DSN accepted: '.$invalid);
@@ -188,7 +190,9 @@ test('PHP errors and the telemetry crash pipeline are forwarded', static functio
     error_reporting($previous);
     $telemetry = new Observability(new ObservabilityConfig('https://collector.example', 'app'), new FakeTransport());
     $telemetry->crash(new RuntimeException('render failed'));
-    $events = sentryEvents($fake);
+    // The harness boots no root, so each fake module result's after-dispatch
+    // render fails and is (rightly) reported by the runtime; not this contract.
+    $events = array_values(array_filter(sentryEvents($fake), static fn (array $event): bool => valueAt($event, ['exceptions', 0, 'mechanism']) !== 'pam.php.runtime'));
     same(2, count($events), 'warning + crash');
     same('ErrorException', valueAt($events[0], ['exceptions', 0, 'type']), 'error converted');
     same('Disk almost full', valueAt($events[0], ['exceptions', 0, 'value']), 'error message');
@@ -196,6 +200,26 @@ test('PHP errors and the telemetry crash pipeline are forwarded', static functio
     same('pam.php.error_handler', valueAt($events[0], ['exceptions', 0, 'mechanism']), 'error mechanism');
     same(false, $events[1]['handled'], 'unhandled crash');
     same(Severity::Fatal->value, $events[1]['level'], 'fatal level');
+    NativeTestHarness::uninstall();
+});
+
+test('errors the runtime catches (event, render) are forwarded once', static function (): void {
+    $fake = sentryBoot(SentryExporter::dsn('https://public@sentry.example.test/14')->capturePhpErrors(true, E_USER_WARNING));
+    $fake->succeed('observability', 'sentryCapture', ['eventId' => 'e']);
+    $fake->succeed('observability', 'sentryCapture', ['eventId' => 'r']);
+    $event = new LogicException('tap handler failed');
+    \Pam\Native\Diagnostics\ErrorReporter::notify($event, \Pam\Native\Diagnostics\RuntimeError::from($event, \Pam\Native\Diagnostics\RuntimeErrorPhase::Event));
+    \Pam\Native\Diagnostics\ErrorReporter::notify($event, \Pam\Native\Diagnostics\RuntimeError::from($event, \Pam\Native\Diagnostics\RuntimeErrorPhase::Event));
+    $render = new RuntimeException('render failed');
+    \Pam\Native\Diagnostics\ErrorReporter::notify($render, \Pam\Native\Diagnostics\RuntimeError::from($render, \Pam\Native\Diagnostics\RuntimeErrorPhase::Render));
+    // Without a booted root the harness' own after-dispatch renders fail too.
+    $events = array_values(array_filter(sentryEvents($fake), static fn (array $event): bool => in_array(valueAt($event, ['exceptions', 0, 'value']), ['tap handler failed', 'render failed'], true)));
+    same(2, count($events), 'duplicate suppressed');
+    same(false, $events[0]['handled'], 'unhandled');
+    same(Severity::Error->value, $events[0]['level'], 'event phase is an error');
+    same(['pam.phase' => 'event'], $events[0]['tags'], 'phase tag');
+    same('pam.php.runtime', valueAt($events[0], ['exceptions', 0, 'mechanism']), 'runtime mechanism');
+    same(Severity::Fatal->value, $events[1]['level'], 'render phase is fatal');
     NativeTestHarness::uninstall();
 });
 
