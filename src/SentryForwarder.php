@@ -6,6 +6,8 @@ namespace Pam\Native\Observability;
 
 use Closure;
 use ErrorException;
+use Pam\Native\Diagnostics\ErrorReporter;
+use Pam\Native\Diagnostics\RuntimeError;
 use Pam\Native\Modules\NativeModuleResult;
 use Pam\Native\Modules\NativeModules;
 use Throwable;
@@ -27,6 +29,8 @@ final class SentryForwarder
     private static ?SentryExporter $exporter = null;
 
     private static bool $handlersInstalled = false;
+
+    private static ?int $runtimeListener = null;
 
     private static bool $forwarding = false;
 
@@ -50,6 +54,7 @@ final class SentryForwarder
             self::$handlersInstalled = true;
             self::installHandlers();
         }
+        self::listenRuntimeErrors($exporter->capturesPhpErrors());
 
         return NativeModules::call(self::MODULE, 'sentryInit', ['config' => self::json($exporter->toWire())], static function (NativeModuleResult $result) use ($then): void {
             $then?->__invoke($result->succeeded(), $result->succeeded() ? null : $result->message());
@@ -66,6 +71,7 @@ final class SentryForwarder
         self::$exporter = null;
         self::$recent = [];
         self::$windowCount = 0;
+        self::listenRuntimeErrors(false);
     }
 
     /**
@@ -213,6 +219,35 @@ final class SentryForwarder
         self::$recent[$key] = $now;
 
         return true;
+    }
+
+    /**
+     * The runtime catches what escapes an event handler, a render, a module
+     * result or a promise (it shows the overlay or the release fallback
+     * instead of crashing), so those never reach the exception handler.
+     * Re-subscribed on every install: a runtime shutdown clears listeners.
+     */
+    private static function listenRuntimeErrors(bool $enabled): void
+    {
+        if (!class_exists(ErrorReporter::class)) {
+            return;
+        }
+        if (self::$runtimeListener !== null) {
+            ErrorReporter::unsubscribe(self::$runtimeListener);
+            self::$runtimeListener = null;
+        }
+        if (!$enabled) {
+            return;
+        }
+        self::$runtimeListener = ErrorReporter::listen(static function (Throwable $error, RuntimeError $report): void {
+            self::capture(
+                $error,
+                handled: false,
+                level: $report->phase->fatal() ? Severity::Fatal : Severity::Error,
+                tags: ['pam.phase' => $report->phase->value],
+                mechanism: 'pam.php.runtime',
+            );
+        });
     }
 
     private static function installHandlers(): void
