@@ -6,7 +6,6 @@ namespace Pam\Native\Observability;
 
 use Closure;
 use ErrorException;
-use JsonException;
 use Pam\Native\Modules\NativeModuleResult;
 use Pam\Native\Modules\NativeModules;
 use Throwable;
@@ -296,10 +295,8 @@ final class SentryForwarder
     /** @param array<string, mixed> $value */
     private static function json(array $value): string
     {
-        try {
-            return json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
-        } catch (JsonException) {
-            return '{}';
-        }
+        $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        return $json === false ? '{}' : $json;
     }
 }
