@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.2 - 2026-11-01
+
 - PHP errors the runtime catches are forwarded to Sentry. What escapes an
   event handler, a render, a module result or a promise is caught by PAM
   Native (developer overlay or release fallback) and never reached the
