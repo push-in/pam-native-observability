@@ -4,24 +4,37 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "09f48301f360f22de9803797d279c04b",
+    "content-hash": "816d3043dc4b49bc8cadc87d6604d65e",
     "packages": [
         {
             "name": "pushinbr/pam-native",
-            "version": "v1.0.37",
+            "version": "v1.46.34",
             "source": {
                 "type": "git",
                 "url": "https://github.com/push-in/pam-native.git",
-                "reference": "ce61afad14aeb26ef36b10579a73cd07523e2a32"
+                "reference": "76eb55413708c569c1a512aff001be08fb092c14"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/push-in/pam-native/zipball/ce61afad14aeb26ef36b10579a73cd07523e2a32",
-                "reference": "ce61afad14aeb26ef36b10579a73cd07523e2a32",
+                "url": "https://api.github.com/repos/push-in/pam-native/zipball/76eb55413708c569c1a512aff001be08fb092c14",
+                "reference": "76eb55413708c569c1a512aff001be08fb092c14",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.5"
+            },
+            "suggest": {
+                "pushinbr/pam-native-audio": "Voice recorder (moved out of the core in 1.46: Pam\\Native\\Audio\\AudioRecorder) and the headless audio player.",
+                "pushinbr/pam-native-auth": "Biometric authentication.",
+                "pushinbr/pam-native-contacts": "Device contacts and the SMS composer (moved out of the core in 1.46: Pam\\Native\\Contacts\\Contacts, Sms).",
+                "pushinbr/pam-native-drawer": "Optional drawer navigation and native drawer host.",
+                "pushinbr/pam-native-location": "Device location (moved out of the core in 1.46: Pam\\Native\\Location\\Location).",
+                "pushinbr/pam-native-media": "Media library, system capture and view capture.",
+                "pushinbr/pam-native-notifications": "Native notifications and push rendering.",
+                "pushinbr/pam-native-sensors": "Motion sensors (moved out of the core in 1.46: Pam\\Native\\Sensors\\Sensors).",
+                "pushinbr/pam-native-share-extension": "Incoming shared content.",
+                "pushinbr/pam-native-toast": "Styled in-app toasts and variants.",
+                "pushinbr/pam-native-webview": "Hardened native embedded web pages."
             },
             "bin": [
                 "packages/native/bin/pam-native",
@@ -376,6 +389,12 @@
                 }
             },
             "autoload": {
+                "files": [
+                    "packages/native/src/Polyfill/mbstring_functions.php",
+                    "packages/native/src/Routing/functions.php",
+                    "packages/native/src/functions.php",
+                    "packages/native/src/Testing/functions.php"
+                ],
                 "psr-4": {
                     "Pam\\Native\\": "packages/native/src/"
                 }
@@ -397,17 +416,17 @@
                 "issues": "https://github.com/push-in/pam-native/issues",
                 "source": "https://github.com/push-in/pam-native"
             },
-            "time": "2026-10-05T17:24:02+00:00"
+            "time": "2026-11-02T21:17:05+00:00"
         }
     ],
     "packages-dev": [
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.17",
+            "version": "2.3.5",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e676a49fa70cee9f5bf6ff4796186b928a08673f",
-                "reference": "e676a49fa70cee9f5bf6ff4796186b928a08673f",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/645a1bd6bead15fc1b8474137467961d0fa30a79",
+                "reference": "645a1bd6bead15fc1b8474137467961d0fa30a79",
                 "shasum": ""
             },
             "require": {
@@ -463,7 +482,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-04T19:40:09+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "pushinbr/pam-native-testing",

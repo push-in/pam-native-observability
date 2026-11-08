@@ -348,11 +348,11 @@ delivery problems.
 
 | `pushinbr/pam-native-observability` | `pushinbr/pam-native` | Android | iOS |
 | --- | --- | --- | --- |
-| 0.5.x | `>=1.0.35 <2.0.0` (tested with 1.14.x; `App::onError()` needs 1.7+) | API 26+, Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
+| 0.5.x | `>=1.7.0 <2.0.0` (tested with 1.7.0 and 1.46.x; `App::onError()` and `Diagnostics\ErrorReporter` need 1.7+) | API 26+, Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
 | 0.4.x | `>=1.0.35 <2.0.0` | API 26+ | 15+ |
 | 0.3.x | `>=1.0.35 <2.0.0` | API 26+ | Telemetry pipeline only |
 
-This package targets PAM Native `>=1.0.35 <2.0.0`, Android API 26+, and iOS 15+ unless a platform-specific section above states a stricter requirement. Platform SDKs, credentials, entitlements, physical hardware, and store configuration remain application responsibilities.
+This package targets PAM Native `>=1.7.0 <2.0.0`, Android API 26+, and iOS 15+ unless a platform-specific section above states a stricter requirement. Platform SDKs, credentials, entitlements, physical hardware, and store configuration remain application responsibilities.
 
 - [PAM documentation](https://push-in.github.io/pam-docs/introduction/)
 - [PAM Native overview](https://push-in.github.io/pam-docs/native/overview/)

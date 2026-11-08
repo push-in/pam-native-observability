@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.5.3 - 2026-11-08
+
+- Requires PAM Native `>=1.7.0 <2.0.0`. The runtime error forwarding added in
+  0.5.2 uses `Diagnostics\ErrorReporter`, which PAM Native 1.0.x does not
+  have, so the lowest dependency graph failed to load it.
+
 ## 0.5.2 - 2026-11-01
 
 - PHP errors the runtime catches are forwarded to Sentry. What escapes an
