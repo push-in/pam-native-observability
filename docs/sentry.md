@@ -59,7 +59,7 @@ App::onError(function (Throwable $error, RuntimeError $context): void {
 On older PAM Native versions wrap critical callbacks with
 `Observability::guard()` or call `capture()` yourself.
 
-Android API 26+ and iOS 15+. On iOS the exporter runs on the Sentry Cocoa SDK
+Android API 24+ and iOS 15+. On iOS the exporter runs on the Sentry Cocoa SDK
 (8.x Swift package): native crashes (signal/Mach handler), app hangs
 (`anr()`/`anrTimeoutMs`), PHP events with PHP stack frames, breadcrumbs,
 user, tags, flush, status and the diagnostic test event. The persisted

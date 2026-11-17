@@ -67,7 +67,7 @@ The queue is bounded and drops the oldest signals under backpressure; failed exp
 
 | Platform | Support | Notes |
 | --- | --- | --- |
-| Android | API 26+ | Sentry Android core + NDK 8.50.1 |
+| Android | API 24+ | Sentry Android core + NDK 8.50.1 |
 | iOS | 15.0+ | Sentry Cocoa 8.x Swift package (from 8.40.0); not yet validated on a device |
 | PAM Native | 1.7.0 to < 2.0.0 | `composer.json` requires ^1.7 (`App::onError()`); the manifest declares 1.0.35 to < 2.0.0; PHP 8.5+ |
 

@@ -6,7 +6,7 @@
   "php": {"provider": "Pam\\Native\\Observability\\ObservabilityPluginProvider"},
   "android": {
     "namespace": "dev.pam.observability",
-    "minSdk": 26,
+    "minSdk": 24,
     "permissions": ["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"],
     "manifest": "android/src/main/AndroidManifest.xml",
     "consumerRules": "android/consumer-rules.pro",
