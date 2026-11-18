@@ -69,7 +69,7 @@ The queue is bounded and drops the oldest signals under backpressure; failed exp
 | --- | --- | --- |
 | Android | API 24+ | Sentry Android core + NDK 8.50.1 |
 | iOS | 15.0+ | Sentry Cocoa 8.x Swift package (from 8.40.0); not yet validated on a device |
-| PAM Native | 1.7.0 to < 2.0.0 | `composer.json` requires ^1.7 (`App::onError()`); the manifest declares 1.0.35 to < 2.0.0; PHP 8.5+ |
+| PAM Native | 1.53.1 to < 2.0.0 | `composer.json` requires ^1.53.1 (Android 7.0/7.1 hosts); PHP 8.5+ |
 
 <a id="requirements"></a>
 ## <picture><img src=".github/assets/icons/shield.svg" width="22" height="22" alt=""></picture> Permissions and requirements
@@ -123,7 +123,8 @@ The default HTTPS transport works with a collector or ingestion gateway; use `Ob
 
 | `pushinbr/pam-native-observability` | `pushinbr/pam-native` | Android | iOS |
 | --- | --- | --- | --- |
-| 0.5.x | `>=1.7.0 <2.0.0` (tested with 1.7.0 and 1.46.x; `App::onError()` and `Diagnostics\ErrorReporter` need 1.7+) | API 26+, Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
+| 0.5.4+ | `>=1.53.1 <2.0.0` | API 24+ (Android 7.0), Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
+| 0.5.0 to 0.5.3 | `>=1.7.0 <2.0.0` (tested with 1.7.0 and 1.46.x; `App::onError()` and `Diagnostics\ErrorReporter` need 1.7+) | API 26+, Sentry Android 8.50.1 | 15+, Sentry Cocoa 8.x |
 | 0.4.x | `>=1.0.35 <2.0.0` | API 26+ | 15+ |
 | 0.3.x | `>=1.0.35 <2.0.0` | API 26+ | Telemetry pipeline only |
 

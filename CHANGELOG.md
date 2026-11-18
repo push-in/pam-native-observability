@@ -1,10 +1,15 @@
 # Changelog
 
+## Unreleased
+
+## 0.5.5 - 2026-11-18
+
+- `composer.lock` locks `pushinbr/pam-native` 1.53.1, the version 0.5.4 requires; the 0.5.4 lock still held 1.46.34, so `composer install` and CI failed.
+- Android 7.0 verified: lint (`NewApi` included) is clean at minSdk 24 and the Sentry exporter's instrumented tests pass on API 24 and API 35 emulators.
+
 ## 0.5.4 - 2026-11-17
 
 - Android 7.0/7.1 support: the plugin declares minSdk 24 and every newer Android API it uses has a version check and fallback. Requires PAM Native 1.53.1 or later.
-
-## Unreleased
 
 ## 0.5.3 - 2026-11-08
 
