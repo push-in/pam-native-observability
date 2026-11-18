@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "816d3043dc4b49bc8cadc87d6604d65e",
+    "content-hash": "c25aad80b544165df21b1f09c52fc678",
     "packages": [
         {
             "name": "pushinbr/pam-native",
-            "version": "v1.46.34",
+            "version": "v1.53.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/push-in/pam-native.git",
-                "reference": "76eb55413708c569c1a512aff001be08fb092c14"
+                "reference": "2d02aca95d9ef981ed44bade829b06cf77f4e996"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/push-in/pam-native/zipball/76eb55413708c569c1a512aff001be08fb092c14",
-                "reference": "76eb55413708c569c1a512aff001be08fb092c14",
+                "url": "https://api.github.com/repos/push-in/pam-native/zipball/2d02aca95d9ef981ed44bade829b06cf77f4e996",
+                "reference": "2d02aca95d9ef981ed44bade829b06cf77f4e996",
                 "shasum": ""
             },
             "require": {
@@ -191,6 +191,13 @@
                             ],
                             "description": "Inspect PAM Native iOS signing"
                         },
+                        "tvos:run": {
+                            "bin": "packages/native/bin/pam-native",
+                            "arguments": [
+                                "tvos:run"
+                            ],
+                            "description": "Build, install and start the PAM Native app on the booted Apple TV Simulator"
+                        },
                         "benchmark": {
                             "bin": "packages/native/bin/pam-native",
                             "arguments": [
@@ -222,6 +229,13 @@
                                 "screenshot"
                             ],
                             "description": "Capture a native device screenshot"
+                        },
+                        "tvos:build": {
+                            "bin": "packages/native/bin/pam-native",
+                            "arguments": [
+                                "tvos:build"
+                            ],
+                            "description": "Build the PAM Native Apple TV (tvOS) application"
                         },
                         "diagnostics": {
                             "bin": "packages/native/bin/pam-native",
@@ -299,6 +313,13 @@
                                 "runtime:list"
                             ],
                             "description": "List installed native runtimes"
+                        },
+                        "tvos:prepare": {
+                            "bin": "packages/native/bin/pam-native",
+                            "arguments": [
+                                "tvos:prepare"
+                            ],
+                            "description": "Prepare the PAM Native Apple TV (tvOS) project"
                         },
                         "native:format": {
                             "script": "packages/native/bin/pam-native-format",
@@ -416,7 +437,7 @@
                 "issues": "https://github.com/push-in/pam-native/issues",
                 "source": "https://github.com/push-in/pam-native"
             },
-            "time": "2026-11-02T21:17:05+00:00"
+            "time": "2026-11-18T01:37:36+00:00"
         }
     ],
     "packages-dev": [
